@@ -31,6 +31,7 @@ no telemetry — everything runs on your machine against your local dsh web API.
 | **`[ASK]` decision gate** | Question/decision cards skip triage entirely and wake a designated answerer — answered, never decomposed |
 | **`session_message`** | Any session can message any other session, with state-aware, always-visible delivery |
 | **`taskboard_done`** | Creator-only task close with a mandatory closing comment |
+| **`contacts`** | Named contact directory over session ids — alias → session id + live status in one call, message a contact in one call |
 | **Concurrency caps** | Global / per-project / per-column executor limits with automatic re-dispatch |
 | **Telegram bridge** *(optional)* | Polls a local MCP endpoint for pending callbacks and creates tasks from them (off by default) |
 
@@ -42,6 +43,7 @@ no telemetry — everything runs on your machine against your local dsh web API.
 | `taskboard_create` / `update` / `move` / `checklist` tools | `taskboard_done` — creator-only close |
 | Manual card work by sessions | Automatic spawn / route / execute / wake |
 | — | `session_message` cross-session messaging |
+| — | `contacts` — named contact directory (alias → session + live status) |
 | — | `@orchestrator` + `[ASK]` escalation routing |
 | — | Optional Telegram remote-control bridge |
 
@@ -154,6 +156,29 @@ Creator-only: the caller must be the task's creator and the task must be
 `in_review`. Posts the closing comment, then performs the done move. No other
 path moves a task to `done` — `taskboard_move` hard-forbids it.
 
+### `contacts`
+
+```
+contacts { action: "list" }
+→ { ok, count, contacts: [{ name, sessionId, label, tags, note, updatedAt, status }] }
+
+contacts { action: "get", name }
+contacts { action: "call", name, message, wake?, resumeIfDead? }   // via the session_message engine
+contacts { action: "add", name, sessionId, label?, tags?, note? }
+contacts { action: "update", name, sessionId?, label?, tags?, note?, rename? }
+contacts { action: "remove", name }
+```
+
+A named directory over raw session ids: `list`/`get` resolve an alias to
+its session id + **live status** in one call, `call` messages the contact
+through the `session_message` delivery engine (same `wake` /
+`resumeIfDead` semantics, same delivery fields), and `add`/`update`/
+`remove` manage entries at runtime — no config edit, no restart. Entries
+persist to a local JSON store (`~/.dsh/taskboard-flow-contacts.json` by
+default; atomic writes; personal state, never shipped). Kill-switch
+`contacts.enabled: false`; custom store path via `contacts.file`. Names:
+lowercase `[a-z0-9._-]`, ≤64 chars.
+
 ## Requirements
 
 - A running **dsh web** deployment (the plugin talks to the local run API at
@@ -202,6 +227,8 @@ Every knob is documented inline in
 | `executeUrl` | `http://127.0.0.1:9001/dsh-taskboard` | Local dsh web run API |
 | `defaultEnabled` | `false` | Boards without an entry stay untouched |
 | `sessionMessage.enabled` | `true` | Registers (or withholds) the `session_message` tool |
+| `contacts.enabled` | `true` | Registers (or withholds) the `contacts` tool |
+| `contacts.file` | `~/.dsh/taskboard-flow-contacts.json` | Local JSON store for contact entries (atomic writes) |
 
 ### Per project (one key per board/workspace id)
 

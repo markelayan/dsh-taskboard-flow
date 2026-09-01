@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.7.0 (2026-09-01)
+
+- New `contacts` tool: a named contact directory over raw session ids.
+  `contacts { action: "list" | "get" }` resolves an alias ("advisor") to
+  its session id + label + LIVE status in one call — no
+  `session_message list`-then-guess. `contacts { action: "call", name,
+  message }` messages a contact through the exact `session_message`
+  delivery engine (idle → full-text wake-steer, busy → mid-turn-safe
+  notice), accepting the same `wake` / `resumeIfDead` knobs. `add` /
+  `update` (incl. rename) / `remove` manage the directory at runtime —
+  no config edit, no restart.
+- Store: local JSON (default `~/.dsh/taskboard-flow-contacts.json`),
+  atomic tmp+rename writes; personal state, never shipped. Kill-switch
+  `contacts.enabled: false` (default ON); custom path via
+  `contacts.file`.
+- Refactor: the `session_message` send path was extracted into a shared
+  `deliverSessionMessage` used by both tools — delivery semantics are
+  unchanged.
+
 ## v0.6.2-alpha.3 (2026-08-31)
 
 - Board hygiene law (SKILL.md): NEVER `taskboard_delete` a card that

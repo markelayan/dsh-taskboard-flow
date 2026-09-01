@@ -32,6 +32,13 @@
         sessionMessage:
           enabled: true
 
+        # v0.7.0: contacts directory tool — named session aliases with
+        # live status, CRUD at runtime. Default ON; the store defaults to
+        # ~/.dsh/taskboard-flow-contacts.json. Override with:
+        # contacts:
+        #   enabled: true
+        #   file: '~/.dsh/taskboard-flow-contacts.json'
+
         # ── per-project (per-board) wiring ─────────────────────────────
         # One key per dsh-taskboard board (workspace id). Boards with no
         # entry here are left untouched (defaultEnabled false).

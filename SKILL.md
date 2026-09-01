@@ -22,7 +22,10 @@ by taskboard-flow, or when a user asks you to use `session_message` or
    dsh instance (v0.6.0+).
 2. **`taskboard_done`** — creator-only task close with a mandatory closing
    comment.
-3. **Board flows** — spawned triage/executor sessions, review wakes, and
+3. **`contacts`** — named contact directory: resolve an alias like
+   "advisor" to its session id + live status in one call, and message it
+   in one call (v0.7.0+).
+4. **Board flows** — spawned triage/executor sessions, review wakes, and
    `@orchestrator` escalation happen automatically from card transitions; you
    normally don't invoke them, you just receive their effects (wakes, notices,
    context notes).
@@ -77,6 +80,33 @@ Creator-only: the calling session must be the task's creator; only callable
 while the task is `in_review`. Posts the comment, then performs the done move.
 You can NEVER otherwise move a task to `done` — `taskboard_move` forbids it;
 hand off with `in_review` and let the creator (or the user) close.
+
+### contacts
+
+Named directory over raw session ids — resolve "who do I message" in ONE
+call, with live status, instead of `session_message list` + guessing:
+
+```
+contacts { "action": "list" }
+→ { "ok": true, "count": 2, "contacts": [ { "name": "advisor",
+      "sessionId": "session-…", "label": "Trading advisor",
+      "tags": ["trading"], "status": "idle" }, … ] }
+
+contacts { "action": "get",  "name": "advisor" }   → one contact + live status
+contacts { "action": "call", "name": "advisor", "message": "…" }
+                                                   → sends via the session_message engine
+contacts { "action": "add",    "name": "reviewer", "sessionId": "session-…", "label": "…" }
+contacts { "action": "update", "name": "reviewer", "sessionId": "session-…" }  // "rename": renames the alias
+contacts { "action": "remove", "name": "reviewer" }
+```
+
+- `call` accepts the same `wake` / `resumeIfDead` knobs as
+  `session_message send` and returns the same delivery fields.
+- Entries live in a local JSON store
+  (`~/.dsh/taskboard-flow-contacts.json` by default): personal state,
+  add/edit/delete at runtime, no config edit or restart. Kill-switch:
+  `contacts.enabled: false`.
+- Names: lowercase `[a-z0-9._-]`, ≤64 chars.
 
 ## Messaging etiquette
 

@@ -1,7 +1,7 @@
 {
   "name": "taskboard-flow",
-  "version": "0.6.2-alpha.3",
-  "description": "DSH plugin: multi-project kanban flow engine + cross-session messaging. Watches dsh-taskboard ledgers, spawns triage/executor agent sessions on card transitions, wakes creators on review, relays @orchestrator escalation, and provides the session_message model tool for session-to-session messaging. Config is file-based (cordis composition) — no web UI.",
+  "version": "0.7.0",
+  "description": "DSH plugin: multi-project kanban flow engine + cross-session messaging. Watches dsh-taskboard ledgers, spawns triage/executor agent sessions on card transitions, wakes creators on review, relays @orchestrator escalation, and provides the session_message + contacts model tools for session-to-session messaging. Config is file-based (cordis composition) — no web UI.",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
