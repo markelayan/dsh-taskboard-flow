@@ -1,0 +1,143 @@
+# taskboard-flow — example configuration
+#
+# INSTALL: copy this file to `cordis.patch.yml` in the package root, then edit
+# it for YOUR boards:
+#
+#   cp cordis.patch.yml.example cordis.patch.yml
+#
+# The plugin AUTO-LOADS `cordis.patch.yml` from its package root (it ships as
+# the package's cordis bundle patch). Do NOT also add a separate
+# `- insert: taskboard-flow` row to your profile's cordis.patch.yml — that
+# produces a "duplicate entry for taskboard-flow" error at dsh web startup.
+#
+# All configuration lives HERE. Edit this file and restart `dsh web`.
+#
+# SECURITY NOTE: cordis.patch.yml is gitignored. It contains your local
+# paths and session ids — never commit or share it.
+
+- insert:
+    - id: taskboard-flow
+      name: taskboard-flow
+      config:
+        # ── global knobs ────────────────────────────────────────────────
+        enabled: true          # master switch
+        pollMs: 5000           # ledger poll interval (ms)
+        skipFirstPoll: true    # don't react to pre-existing transitions at boot
+        maxConcurrent: 3       # fallback cap for simultaneous spawned executors
+        executeUrl: 'http://127.0.0.1:9001/dsh-taskboard'  # local dsh web run API (default)
+        defaultEnabled: false  # boards WITHOUT an entry below are untouched
+
+        # v0.6.0: kill-switch for the session_message model tool
+        # (cross-session messaging). Default ON.
+        sessionMessage:
+          enabled: true
+
+        # ── per-project (per-board) wiring ─────────────────────────────
+        # One key per dsh-taskboard board (workspace id). Boards with no
+        # entry here are left untouched (defaultEnabled false).
+        #
+        # ROUTING STANDARD — the same three-column loop for every board:
+        #   backlog   → spawns a TRIAGE agent session (column prompt +
+        #               card body) that decomposes the work order into
+        #               child cards in `todo`. "[ASK]"-titled cards skip
+        #               triage (skipSpawnPrefixes) and WAKE the callback
+        #               target instead — question/decision cards are
+        #               answered, never decomposed.
+        #   todo      → cards execute DIRECTLY via the real taskboard
+        #               run API (spawnMode: execute). Titles containing
+        #               a keyword from executeSkipTitleContains are held
+        #               (planned umbrellas).
+        #   in_review → wake callback into the task's creator session
+        #               (or a fixed session) — the review moment.
+        #   any card  → a comment starting "@orchestrator" escalates to
+        #               the project's orchestratorSession (when set).
+        projects:
+
+          # ── example board ─────────────────────────────────────────────
+          # Replace YOUR-BOARD-ID with your dsh-taskboard workspace id.
+          'YOUR-BOARD-ID':
+            enabled: true
+            cwd: /absolute/path/to/your/project/workspace
+            renameSession: true      # rename spawned sessions after the task
+            attachWorkspace: true    # attach the cwd as session workspace
+            # Optional: @orchestrator comment relay + [ASK] wake target.
+            # Set to a live session id once you have an orchestrator
+            # session; omit the key to disable the relay.
+            # orchestratorSession: 'session-xxxxxxxx-xxxx-xxxx-xxxxxxxxxxxx'
+            # Optional: Telegram callback bridge (polls a local MCP
+            # endpoint for pending callbacks and creates tasks from them).
+            # telegramBridge:
+            #   enabled: false
+            #   brainMcpUrl: 'http://localhost:8767/mcp'
+            columns:
+              backlog:
+                enabled: true
+                skipSpawnPrefixes: ['[ASK]']
+                dshCallback:
+                  enabled: true
+                  onlyPrefix: '[ASK]'   # only [ASK] cards consume this callback
+                  target: creator       # 'creator' or a fixed session id
+                  mode: wake            # wake = start a turn on the target
+                  includeReport: false
+                  resumeIfDead: true    # resurrect the target after dsh restart
+                  telegramFallback: true
+                prompt: |
+                  You are the TRIAGE agent of this board.
+                  Decompose the card body (the user's work order) into child
+                  cards in `todo`. Rules of thumb you should adapt to your
+                  own convention:
+                  - Question/decision cards are answered in a comment, then
+                    moved to in_review — never decomposed. "[ASK]"-titled
+                    cards are NEVER decomposed; escalate instead.
+                  - Every child card gets an explicit model pin
+                    (taskboard_create `model` field) — executor sessions run
+                    on the card's model.
+                  - Do NOT pass `checklist` to taskboard_create. Put the DoD
+                    items in the child prompt and have the executor mint its
+                    own checklist (taskboard_checklist action=add) so it
+                    sees item ids and can check items off with evidence.
+                  - Never use todo_write; the task checklist is the todo list.
+                  - NEVER taskboard_delete cards. Finished work hands off
+                    in_review for the creator to close; soft-deleted cards
+                    vanish from the main board and read as lost. Delete is
+                    only for true junk and only on the user's explicit
+                    instruction.
+                  - If the card description already specifies children/DoD,
+                    create them exactly as specified — do not re-plan.
+                model:
+                  provider: your-provider       # e.g. whatever your dsh routes expose
+                  model: your-default-model
+              todo:
+                enabled: true
+                spawnMode: execute       # real run-API execution, no bare spawn
+                executeSkipTitleContains: ['Triage']  # planned umbrella mains
+                executeMaxConcurrent: 3  # column cap > project cap > global
+              in_review:
+                enabled: false           # column itself need not be enabled
+                dshCallback:
+                  enabled: true
+                  target: creator
+                  mode: wake
+                  includeReport: true    # attach the execution report
+                  resumeIfDead: true     # review loop survives dsh restarts
+                  telegramFallback: true
+
+        # ── dshCallback reference (all knobs) ────────────────────────────
+        #   enabled          gate
+        #   target           'creator' | session id
+        #   onlyPrefix       only titles with this prefix consume the callback
+        #   mode             'wake' (start a turn: steer → followup) |
+        #                    'notify' (agent.inject notice, no turn) |
+        #                    'context' (default; runtime-context note)
+        #   delivery         for wake: 'steer' (default) | 'followup'
+        #   includeReport    attach the task's execution report text
+        #   resumeIfDead     AgentRegistry.resume if target not live
+        #   telegramFallback fall back to a Telegram notice if undeliverable
+
+        # ── session_message delivery semantics (v0.6.2) ──────────────────
+        #   idle target : full text steered into its conversation (visible)
+        #                 + runtime-context note; a turn starts at the
+        #                 target's next user input
+        #   busy target : full text injected as a plugin-source notice
+        #                 (visible immediately, mid-turn safe, no turn)
+        #   both        : + a runtime-context note (30-min TTL, cap 5)

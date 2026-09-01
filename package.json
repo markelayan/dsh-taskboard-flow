@@ -1,0 +1,43 @@
+{
+  "name": "taskboard-flow",
+  "version": "0.6.2-alpha.3",
+  "description": "DSH plugin: multi-project kanban flow engine + cross-session messaging. Watches dsh-taskboard ledgers, spawns triage/executor agent sessions on card transitions, wakes creators on review, relays @orchestrator escalation, and provides the session_message model tool for session-to-session messaging. Config is file-based (cordis composition) — no web UI.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/**/*.js",
+    "cordis.patch.yml.example",
+    "SKILL.md",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/markelayan/dsh-taskboard-flow.git"
+  },
+  "homepage": "https://github.com/markelayan/dsh-taskboard-flow#readme",
+  "bugs": "https://github.com/markelayan/dsh-taskboard-flow/issues",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "taskboard",
+    "kanban",
+    "event-driven",
+    "triage",
+    "agent-orchestration",
+    "session-messaging"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

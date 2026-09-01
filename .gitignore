@@ -1,0 +1,13 @@
+# Local configuration — ALWAYS created by the user from
+# cordis.patch.yml.example. Never commit: it carries your board ids,
+# session ids and local paths.
+cordis.patch.yml
+
+# Local agent-tooling state (never publish)
+.claude/
+.omc/
+.remember/
+
+node_modules/
+*.log
+.DS_Store
